@@ -28,17 +28,16 @@ class Tesco:
         categories = soup.find("li", attrs={"data-auto": "filter-categories"}
                                ).find("div", class_="filter-options"
                                       )
-        categories = categories.find_all("a", class_="filter-option--link")
-        categories = [category.get("href")
-                      for category in categories]
+        categories = categories.find_all(
+            "li", class_="filter-option__container")
 
+        results = {}
         for category in categories:
-            print(category)
+            option = category.get("id")
+            link = category.find("a", class_="filter-option--link").get("href")
+            results[option] = link
 
-    @property
-    def filtered_url(self) -> str:
-        """Returns search url with category filter."""
-        pass
+        return results.keys()
 
     @property
     def last_page(self) -> int:
@@ -63,6 +62,7 @@ class Tesco:
         else:
             pages = []
 
+        products = []
         for page in [self.search_url] + pages:
 
             response = requests.get(page, headers=headers)
@@ -79,7 +79,9 @@ class Tesco:
                         "p", class_=re.compile(r"styled__StyledHeading.*price__text.*")).text
                     product = wrapper.find(
                         "span", class_=re.compile(r"styled__Text.*link__text")).text
-                    print(product, price)
+                    products.append((product, price))
+
+        return products
 
 
 # ========== MAIN ==========
