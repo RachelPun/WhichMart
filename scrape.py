@@ -19,24 +19,21 @@ class Tesco:
         return self.base_url + f"/search?query={'%20'.join(self.search.split())}"
 
     @property
-    def categories(self) -> list:
+    def categories(self) -> dict:
         """Return a list of available categories for given search results."""
 
-        # ========== CATEGORY EXPERIMENT ==========
-        # response = requests.get(apple_1, headers=headers)
-        # soup = BeautifulSoup(response.text, features="html.parser")
+        response = requests.get(self.search_url, headers=headers)
+        soup = BeautifulSoup(response.text, features="html.parser")
 
-        # categories = soup.find("li", attrs={"data-auto": "filter-categories"}
-        #                        ).find("div", class_="filter-options"
-        #                               )
-        # print(categories)
-        # for category in categories:
-        #     print(category)
+        categories = soup.find("li", attrs={"data-auto": "filter-categories"}
+                               ).find("div", class_="filter-options"
+                                      )
+        categories = categories.find_all("a", class_="filter-option--link")
+        categories = [category.get("href")
+                      for category in categories]
 
-        # categories = [category.find("span", class_="filter-label--line--inline").text
-        #               for category in categories]
-
-        # print(categories)
+        for category in categories:
+            print(category)
 
     @property
     def filtered_url(self) -> str:
@@ -98,4 +95,5 @@ if __name__ == "__main__":
     mattress_1 = "https://www.tesco.com/groceries/en-GB/search?query=mattress"  # 1
 
     tesco = Tesco(headers, "apple")
-    print(tesco.scrape_all_items())
+    tesco.categories
+    # print(tesco.scrape_all_items())
