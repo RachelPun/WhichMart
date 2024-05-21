@@ -5,6 +5,11 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 
+# ========== GLOBALS ===========
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Linux Android 6.0 Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"}
+
+
 # ========== SCRAPER: TESCO ==========
 class Tesco:
     """Tesco scraper"""
@@ -23,7 +28,7 @@ class Tesco:
     def categories(self) -> dict:
         """Return a list of available categories for given search results."""
 
-        response = requests.get(self.search_url, headers=headers)
+        response = requests.get(self.search_url, headers=self.headers)
         soup = BeautifulSoup(response.text, features="html.parser")
 
         categories = soup.find("li", attrs={"data-auto": "filter-categories"}
@@ -36,14 +41,14 @@ class Tesco:
         for category in categories:
             option = category.get("id")
             link = category.find("a", class_="filter-option--link").get("href")
-            results[option] = link
+            results[option.strip()] = "https://www.tesco.com" + link
 
         return results
 
     def last_page(self, url) -> int:
         """Returns the amount of pages of search results."""
 
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=self.headers)
         soup = BeautifulSoup(response.text, features="html.parser")
         last_page_number = soup.find("a",
                                      class_=re.compile(
@@ -57,15 +62,15 @@ class Tesco:
         """Returns all searched and filtered items' information."""
 
         if self.last_page(url) > 1:
-            pages = [self.search_url+f"&page={num}"
+            pages = [url+f"&page={num}"
                      for num in range(2, self.last_page+1)]
         else:
             pages = []
 
         products = []
-        for page in [self.search_url] + pages:
+        for page in [url] + pages:
 
-            response = requests.get(page, headers=headers)
+            response = requests.get(page, headers=self.headers)
             soup = BeautifulSoup(response.text, features="html.parser")
 
             divs = soup.find("div", class_="product-lists")
@@ -84,12 +89,14 @@ class Tesco:
 
         return pd.DataFrame(products)
 
+    def standardized_extract(self, url):
+        """Returns standardized product information as pd.DF."""
+
+        return self.scrape_all_items(url)
+
 
 # ========== MAIN ==========
 if __name__ == "__main__":
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Linux Android 6.0 Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"}
 
     apple_1 = "https://www.tesco.com/groceries/en-GB/search?query=apples&department=Fresh%20Fruit&viewAll=department"
     tesco_1 = "https://www.tesco.com/groceries/en-GB/search?query=tesco"  # 241->239
@@ -97,7 +104,6 @@ if __name__ == "__main__":
     G500_1 = "https://www.tesco.com/groceries/en-GB/search?query=500G"  # 21
     mattress_1 = "https://www.tesco.com/groceries/en-GB/search?query=mattress"  # 1
 
-    tesco = Tesco(headers, "apple")
-    for category, link in tesco.categories.items():
-        print(category, link)
-    # print(tesco.scrape_all_items())
+    tesco = Tesco(HEADERS, "milk 1L")
+    tesco.standardized_extract(
+        "https://www.tesco.com/groceries/en-GB/search?query=apple&department=Fresh%20Fruit&viewAll=department")

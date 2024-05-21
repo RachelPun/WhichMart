@@ -3,8 +3,8 @@ from scrape import HEADERS, Tesco
 
 if __name__ == "__main__":
 
-    search = st.text_input(key="tesco_search",
-                           label="tesco search",
+    search = st.text_input(key="search",
+                           label="search",
                            label_visibility="visible")
 
     if not search:
