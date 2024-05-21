@@ -2,6 +2,7 @@
 import re
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
 
 
 # ========== SCRAPER: TESCO ==========
@@ -52,7 +53,7 @@ class Tesco:
 
         return int(last_page_number)
 
-    def scrape_all_items(self, url) -> list[dict]:
+    def scrape_all_items(self, url) -> pd.DataFrame:
         """Returns all searched and filtered items' information."""
 
         if self.last_page(url) > 1:
@@ -81,7 +82,7 @@ class Tesco:
                     products.append({"product": product,
                                      "price": price})
 
-        return products
+        return pd.DataFrame(products)
 
 
 # ========== MAIN ==========
