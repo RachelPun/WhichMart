@@ -97,13 +97,4 @@ class Tesco:
 
 # ========== MAIN ==========
 if __name__ == "__main__":
-
-    apple_1 = "https://www.tesco.com/groceries/en-GB/search?query=apples&department=Fresh%20Fruit&viewAll=department"
-    tesco_1 = "https://www.tesco.com/groceries/en-GB/search?query=tesco"  # 241->239
-    pack_1 = "https://www.tesco.com/groceries/en-GB/search?query=pack"  # 89
-    G500_1 = "https://www.tesco.com/groceries/en-GB/search?query=500G"  # 21
-    mattress_1 = "https://www.tesco.com/groceries/en-GB/search?query=mattress"  # 1
-
-    tesco = Tesco(HEADERS, "milk 1L")
-    tesco.standardized_extract(
-        "https://www.tesco.com/groceries/en-GB/search?query=apple&department=Fresh%20Fruit&viewAll=department")
+    pass
