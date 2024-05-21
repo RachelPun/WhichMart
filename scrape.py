@@ -37,13 +37,12 @@ class Tesco:
             link = category.find("a", class_="filter-option--link").get("href")
             results[option] = link
 
-        return results.keys()
+        return results
 
-    @property
-    def last_page(self) -> int:
+    def last_page(self, url) -> int:
         """Returns the amount of pages of search results."""
 
-        response = requests.get(self.search_url, headers=headers)
+        response = requests.get(url, headers=headers)
         soup = BeautifulSoup(response.text, features="html.parser")
         last_page_number = soup.find("a",
                                      class_=re.compile(
@@ -53,10 +52,10 @@ class Tesco:
 
         return int(last_page_number)
 
-    def scrape_all_items(self) -> list[tuple]:
+    def scrape_all_items(self, url) -> list[dict]:
         """Returns all searched and filtered items' information."""
 
-        if self.last_page > 1:
+        if self.last_page(url) > 1:
             pages = [self.search_url+f"&page={num}"
                      for num in range(2, self.last_page+1)]
         else:
@@ -79,7 +78,8 @@ class Tesco:
                         "p", class_=re.compile(r"styled__StyledHeading.*price__text.*")).text
                     product = wrapper.find(
                         "span", class_=re.compile(r"styled__Text.*link__text")).text
-                    products.append((product, price))
+                    products.append({"product": product,
+                                     "price": price})
 
         return products
 
@@ -97,5 +97,6 @@ if __name__ == "__main__":
     mattress_1 = "https://www.tesco.com/groceries/en-GB/search?query=mattress"  # 1
 
     tesco = Tesco(headers, "apple")
-    tesco.categories
+    for category, link in tesco.categories.items():
+        print(category, link)
     # print(tesco.scrape_all_items())
