@@ -59,11 +59,13 @@ class Tesco:
         return int(last_page_number)
 
     def scrape_all_items(self, url) -> pd.DataFrame:
-        """Returns all searched and filtered items' information."""
+        """Returns all searched and filtered items' information as pd.DF."""
 
-        if self.last_page(url) > 1:
+        last_page = self.last_page(url)
+
+        if last_page > 1:
             pages = [url+f"&page={num}"
-                     for num in range(2, self.last_page+1)]
+                     for num in range(2, last_page+1)]
         else:
             pages = []
 
@@ -92,7 +94,12 @@ class Tesco:
     def standardized_extract(self, url):
         """Returns standardized product information as pd.DF."""
 
-        return self.scrape_all_items(url)
+        df = self.scrape_all_items(url)
+        df["quantity"] = df["product"].str.extract(
+            r"(?:(?:[Ll]oose [Cc]lass )|(?:[Aa]pprox(?:imate)? ))?((?:\d X )?\d*\.?\d+ ?(?:(?:[Mm]?[Ll](?:itre)?)|(?:[Kk]?[Gg])(?:ram)?|(?:[Pp]ack))?)")
+        df["product"] = df["product"].str.extract(r"(^(?:[A-z-]+ )+)")
+
+        return df
 
 
 # ========== MAIN ==========
