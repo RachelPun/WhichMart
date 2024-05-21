@@ -2,6 +2,12 @@
 import re
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
+
+
+# ========== GLOBALS ===========
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Linux Android 6.0 Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"}
 
 
 # ========== SCRAPER: TESCO ==========
@@ -19,35 +25,30 @@ class Tesco:
         return self.base_url + f"/search?query={'%20'.join(self.search.split())}"
 
     @property
-    def categories(self) -> list:
+    def categories(self) -> dict:
         """Return a list of available categories for given search results."""
 
-        # ========== CATEGORY EXPERIMENT ==========
-        # response = requests.get(apple_1, headers=headers)
-        # soup = BeautifulSoup(response.text, features="html.parser")
+        response = requests.get(self.search_url, headers=self.headers)
+        soup = BeautifulSoup(response.text, features="html.parser")
 
-        # categories = soup.find("li", attrs={"data-auto": "filter-categories"}
-        #                        ).find("div", class_="filter-options"
-        #                               )
-        # print(categories)
-        # for category in categories:
-        #     print(category)
+        categories = soup.find("li", attrs={"data-auto": "filter-categories"}
+                               ).find("div", class_="filter-options"
+                                      )
+        categories = categories.find_all(
+            "li", class_="filter-option__container")
 
-        # categories = [category.find("span", class_="filter-label--line--inline").text
-        #               for category in categories]
+        results = {}
+        for category in categories:
+            option = category.get("id")
+            link = category.find("a", class_="filter-option--link").get("href")
+            results[option.strip()] = "https://www.tesco.com" + link
 
-        # print(categories)
+        return results
 
-    @property
-    def filtered_url(self) -> str:
-        """Returns search url with category filter."""
-        pass
-
-    @property
-    def last_page(self) -> int:
+    def last_page(self, url) -> int:
         """Returns the amount of pages of search results."""
 
-        response = requests.get(self.search_url, headers=headers)
+        response = requests.get(url, headers=self.headers)
         soup = BeautifulSoup(response.text, features="html.parser")
         last_page_number = soup.find("a",
                                      class_=re.compile(
@@ -57,18 +58,19 @@ class Tesco:
 
         return int(last_page_number)
 
-    def scrape_all_items(self) -> list[tuple]:
+    def scrape_all_items(self, url) -> pd.DataFrame:
         """Returns all searched and filtered items' information."""
 
-        if self.last_page > 1:
-            pages = [self.search_url+f"&page={num}"
+        if self.last_page(url) > 1:
+            pages = [url+f"&page={num}"
                      for num in range(2, self.last_page+1)]
         else:
             pages = []
 
-        for page in [self.search_url] + pages:
+        products = []
+        for page in [url] + pages:
 
-            response = requests.get(page, headers=headers)
+            response = requests.get(page, headers=self.headers)
             soup = BeautifulSoup(response.text, features="html.parser")
 
             divs = soup.find("div", class_="product-lists")
@@ -82,20 +84,17 @@ class Tesco:
                         "p", class_=re.compile(r"styled__StyledHeading.*price__text.*")).text
                     product = wrapper.find(
                         "span", class_=re.compile(r"styled__Text.*link__text")).text
-                    print(product, price)
+                    products.append({"product": product,
+                                     "price": price})
+
+        return pd.DataFrame(products)
+
+    def standardized_extract(self, url):
+        """Returns standardized product information as pd.DF."""
+
+        return self.scrape_all_items(url)
 
 
 # ========== MAIN ==========
 if __name__ == "__main__":
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Linux Android 6.0 Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"}
-
-    apple_1 = "https://www.tesco.com/groceries/en-GB/search?query=apples&department=Fresh%20Fruit&viewAll=department"
-    tesco_1 = "https://www.tesco.com/groceries/en-GB/search?query=tesco"  # 241->239
-    pack_1 = "https://www.tesco.com/groceries/en-GB/search?query=pack"  # 89
-    G500_1 = "https://www.tesco.com/groceries/en-GB/search?query=500G"  # 21
-    mattress_1 = "https://www.tesco.com/groceries/en-GB/search?query=mattress"  # 1
-
-    tesco = Tesco(headers, "apple")
-    print(tesco.scrape_all_items())
+    pass
