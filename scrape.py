@@ -8,6 +8,47 @@ import pandas as pd
 # ========== GLOBALS ===========
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Linux Android 6.0 Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"}
+UNIT_CONVERSION = {"g": "kg",
+                   "gram": "kg",
+                   "grams": "kg",
+                   "kg": "kg",
+                   "kilograms": "kg",
+                   "ml": "L",
+                   "millilitres": "L",
+                   "milliliters": "L",
+                   "l": "L",
+                   "litre": "L",
+                   "liter": "L",
+                   "litres": "L",
+                   "liters": "L"}
+
+# ========== FUNCTIONS: TRANSFORM ==========
+
+
+def calc_price_per(row: pd.Series) -> str:
+    """Returns price per unit as string."""
+
+    price = float(row["price"].strip("£"))
+    quantity = row["quantity"].lower()
+    amount = re.search(r"((?:\d x )?\d*\.?\d+ ?)",
+                       quantity).group(0)
+    unit = re.search(r"([a-z]+$)", quantity)
+
+    if "x" in amount:
+        count, value = [float(num) for num in amount.split(" x ")]
+        amount = count*value
+    else:
+        amount = float(amount)
+
+    if unit:
+        unit = unit.group(0)
+        if unit in ["g", "grams", "ml", "millilitres", "milliliters"]:
+            amount /= 1000
+        unit = UNIT_CONVERSION[unit]
+    else:
+        unit = "count"
+
+    return f"£{round(price/amount, 2)}/{unit}"
 
 
 # ========== SCRAPER: TESCO ==========
@@ -96,8 +137,10 @@ class Tesco:
 
         df = self.scrape_all_items(url)
         df["quantity"] = df["product"].str.extract(
-            r"(?:(?:[Ll]oose [Cc]lass )|(?:[Aa]pprox(?:imate)? ))?((?:\d X )?\d*\.?\d+ ?(?:(?:[Mm]?[Ll](?:itre)?)|(?:[Kk]?[Gg])(?:ram)?|(?:[Pp]ack))?)")
+            r"(?:(?:[Ll]oose [Cc]lass )|(?:[Aa]pprox(?:imate)? ))?((?:\d [Xx] )?\d*\.?\d+ ?(?:(?:[Mm]?[Ll](?:itre)?)|(?:[Kk]?[Gg](?:ram)?))?)(?:[Pp]ack)?")
         df["product"] = df["product"].str.extract(r"(^(?:[A-z-]+ )+)")
+        df["price_per"] = df.apply(
+            calc_price_per, axis=1)
 
         return df
 
